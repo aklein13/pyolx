@@ -146,6 +146,13 @@ def get_img_url(offer_markup):
 
 
 def get_month_num_for_string(value):
+    """ Map for polish month names
+
+    :param value: Month value
+    :type value: str
+    :return: Month number
+    :rtype: int
+    """
     value = value.lower()[:3]
     return {
         'sty': 1,
@@ -168,8 +175,8 @@ def get_date_added(offer_markup):
 
     :param offer_markup: Class "offerbody" from offer page markup
     :type offer_markup: str
-    :return: Date of adding offer
-    :rtype: str
+    :return: Unix timestamp
+    :rtype: int
     """
     html_parser = BeautifulSoup(offer_markup, "html.parser")
     date = html_parser.find(class_="offer-titlebox__details").em.contents
@@ -287,6 +294,7 @@ def parse_offer(url):
         "poster_name": poster_name,
         "url": url,
         "date_added": get_date_added(offer_content),
+        "date_added_readable": dt.datetime.fromtimestamp(get_date_added(offer_content)).isoformat(),
         "images": get_img_url(offer_content),
         "private_business": data_dict.get("private_business"),
     }
