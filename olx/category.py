@@ -6,9 +6,9 @@ import logging
 import re
 
 from bs4 import BeautifulSoup
+from scrapper_helpers.utils import flatten
 
 from olx.utils import city_name, get_content_for_url, get_url
-from scrapper_helpers.utils import flatten
 
 log = logging.getLogger(__file__)
 logging.basicConfig(level=logging.DEBUG)
@@ -99,26 +99,45 @@ def parse_ads_count(markup):
     return int(data_dict.get("ads_count"))
 
 
-def parse_offer_url(markup):
+def parse_offer_url(markup, today=None, yesterday=None):
     """ Searches for offer links in markup
 
     Offer links on OLX are in class "linkWithHash".
     Only www.olx.pl domain is whitelisted.
 
     :param markup: Search page markup
+    :param today: Should search for offers posted yesterday?
+    :param yesterday: Should search for offers posted yesterday?
+    :type today: object
+    :type yesterday: object
     :type markup: str
     :return: Url with offer
     :rtype: str
     """
+    today_str = "dzisiaj"
+    yesterday_str = "wczoraj"
     html_parser = BeautifulSoup(markup, "html.parser")
+    date_added = html_parser.find(class_='color-9 lheight16 marginbott5 x-normal').text.strip()
     url = html_parser.find("a").attrs['href']
-    return url if url else None
+    if not today and not yesterday:
+        return url
+    if (today or yesterday) and (yesterday_str not in date_added and today_str not in date_added):
+        return
+    if today and not yesterday and yesterday_str in date_added:
+        return
+    if yesterday and not today and today_str in date_added:
+        return
+    return url
 
 
-def parse_available_offers(markup):
+def parse_available_offers(markup, today=None, yesterday=None):
     """ Collects all offer links on search page markup
 
     :param markup: Search page markup
+    :param today: Should search for offers posted yesterday?
+    :param yesterday: Should search for offers posted yesterday?
+    :type today: object
+    :type yesterday: object
     :type markup: str
     :return: Links to offer on given search page
     :rtype: list
@@ -132,7 +151,7 @@ def parse_available_offers(markup):
     offers = html_parser.find_all(class_='offer')
     if len(offers) == 0:
         offers = html_parser.select("li.wrap.tleft")
-    parsed_offers = [parse_offer_url(str(offer)) for offer in offers if offer][:ads_count]
+    parsed_offers = [parse_offer_url(str(offer), today, yesterday) for offer in offers if offer][:ads_count]
     return parsed_offers
 
 
@@ -160,7 +179,9 @@ def get_category(main_category=None, sub_category=None, detail_category=None, re
         #                                             blok, kamienica, szeregowiec, apartamentowiec, wolnostojacy, loft
         "[filter_float_m:from]": 25, # minimal surface
         "[filter_float_m:to]": 50, # maximal surface
-        "[filter_enum_rooms][0]": 2 # desired number of rooms, enum: from 1 to 4 (4 and more)
+        "[filter_enum_rooms][0]": 2, # desired number of rooms, enum: from 1 to 4 (4 and more)
+        "today": True, # Should search for offer posted today?
+        "yesterday": True, # Should search for offers posted yesterday?
     }
 
     :type url: str, None
@@ -189,12 +210,12 @@ def get_category(main_category=None, sub_category=None, detail_category=None, re
         log.debug(url)
         response = get_content_for_url(url)
         log.info("Loaded page {0} of offers".format(page))
-        offers = parse_available_offers(response.content)
+        offers = parse_available_offers(response.content, filters.get('today'), filters.get('yesterday'))
         if offers is None:
             break
         parsed_content.append(offers)
         page += 1
-    parsed_content = list(flatten(parsed_content))
+    parsed_content = [offer for offer in list(flatten(parsed_content)) if offer]
     log.info("Loaded {0} offers".format(str(len(parsed_content))))
     return parsed_content
 
@@ -228,6 +249,6 @@ def get_offers_for_page(page, main_category=None, sub_category=None, detail_cate
         url = get_url(page=page, user_url=url, **filters)
     response = get_content_for_url(url)
     log.info("Loaded page {0} of offers".format(page))
-    offers = parse_available_offers(response.content)
+    offers = [offer for offer in parse_available_offers(response.content) if offer]
     log.info("Loaded {0} offers".format(str(len(offers))))
     return offers
