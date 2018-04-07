@@ -215,12 +215,13 @@ def get_gpt_script(offer_markup):
     """
     html_parser = BeautifulSoup(offer_markup, "html.parser")
     scripts = html_parser.find_all('script')
+    data = ''
     for script in scripts:
         if "GPT.targeting" in script.string:
             data = script.string
             break
     try:
-        data_dict = json.loads((re.split('GPT.targeting = |;', data))[3].replace(";", ""))
+        data_dict = json.loads((re.split('GPT.targeting = |;', data))[2].replace(";", ""))
     except json.JSONDecodeError as e:
         logging.info("JSON failed to parse GPT offer attributes. Error: {0}".format(e))
         data_dict = {}

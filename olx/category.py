@@ -84,6 +84,7 @@ def parse_ads_count(markup):
     """
     html_parser = BeautifulSoup(markup, "html.parser")
     scripts = html_parser.find_all('script')
+    data = ''
     for script in scripts:
         try:
             if "GPT.targeting" in script.string:
@@ -92,7 +93,7 @@ def parse_ads_count(markup):
         except TypeError:
             continue
     try:
-        data_dict = json.loads((re.split('GPT.targeting = |;', data))[3].replace(";", ""))
+        data_dict = json.loads((re.split('GPT.targeting = |;', data))[2].replace(";", ""))
     except json.JSONDecodeError as e:
         logging.info("JSON failed to parse GPT offer attributes. Error: {0}".format(e))
         return 0
