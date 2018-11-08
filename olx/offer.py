@@ -41,7 +41,7 @@ def parse_tracking_data(offer_markup):
     """
     html_parser = BeautifulSoup(offer_markup, "html.parser")
     try:
-        script = html_parser.find('script').next_sibling.next_sibling.next_sibling.text
+        script = html_parser.find('script').next_sibling.text
     except AttributeError:
         return None, None, None
     data_dict = json.loads(re.split("pageView|;", script)[3].replace('":{', "{").replace("}}'", "}"))
