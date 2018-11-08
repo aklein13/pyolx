@@ -276,7 +276,9 @@ def parse_offer(url):
         log.info("Offer {0} is not available anymore.".format(url))
         return
     region = parse_region(offer_content)
-    if len(region) == 3:
+    if len(region) == 4:
+        city, powiat, voivodeship, district = region
+    elif len(region) == 3:
         city, voivodeship, district = region
     else:
         city, voivodeship = region

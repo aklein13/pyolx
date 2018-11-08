@@ -120,7 +120,10 @@ def parse_offer_url(markup, today=None, yesterday=None):
     html_parser = BeautifulSoup(markup, "html.parser")
     date_added = html_parser.find(class_='color-9 lheight16 marginbott5 x-normal')
     date_added = date_added.text.strip() if date_added else None
-    url = html_parser.find("a").attrs['href']
+    offer_link = html_parser.find('a')
+    if not offer_link:
+        return
+    url = offer_link.attrs['href']
     if not today and not yesterday:
         return url
     if (today or yesterday) and (yesterday_str not in date_added and today_str not in date_added):
