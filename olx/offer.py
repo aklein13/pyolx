@@ -92,6 +92,8 @@ def get_poster_name(offer_markup):
     try:
         if poster_name_parser.a is not None:
             found_name = poster_name_parser.a.text.strip()
+            if not found_name:
+                found_name = poster_name_parser.a.next_sibling.next_sibling.text.strip()
         else:
             found_name = poster_name_parser.h4.text.strip()
     except AttributeError:
