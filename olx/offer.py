@@ -183,7 +183,7 @@ def get_date_added(offer_markup):
     html_parser = BeautifulSoup(offer_markup, "html.parser")
     date = html_parser.find(class_="offer-titlebox__details").em.contents
     date = date[4] if len(date) > 4 else date[0]
-    date = date.replace("Dodane", "").replace("\n", "").replace("  ", "").replace("o ", "").replace(", ", " ")
+    date = date.replace("Dodane", "").replace("\n", "").replace("  ", "").replace(", ", " ")[1:].strip()
     # 10:09 04 września 2017
     date_parts = date.split(' ')
     hour, minute = map(int, date_parts[0].split(':'))
@@ -219,7 +219,7 @@ def get_gpt_script(offer_markup):
     scripts = html_parser.find_all('script')
     data = ''
     for script in scripts:
-        if "GPT.targeting" in script.string:
+        if script.string and "GPT.targeting" in script.string:
             data = script.string
             break
     try:
