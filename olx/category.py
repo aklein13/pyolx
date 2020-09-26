@@ -23,8 +23,17 @@ def get_page_count(markup):
     :rtype: int
     """
     html_parser = BeautifulSoup(markup, "html.parser")
-    script = html_parser.head.script.next_sibling.next_sibling.next_sibling.text.split(",")
-    for element in script:
+    scripts = html_parser.head.find_all("script")
+    metadata_script = None
+    error_message = "Error no page number found. Please check if it's valid olx page."
+    for script in scripts:
+        if "page_count" in script.text:
+            metadata_script = script.text.split(",")
+            break
+    if not metadata_script:
+        log.warning(error_message)
+        return 1
+    for element in metadata_script:
         if "page_count" in element:
             current = element.split(":")
             out = ""
@@ -32,7 +41,7 @@ def get_page_count(markup):
                 if char.isdigit():
                     out += char
             return int(out)
-    log.warning("Error no page number found. Please check if it's valid olx page.")
+    log.warning(error_message)
     return 1
 
 
