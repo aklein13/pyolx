@@ -40,11 +40,15 @@ def parse_tracking_data(offer_markup):
     :except: This offer page got deleted and has no tracking script.
     """
     html_parser = BeautifulSoup(offer_markup, "html.parser")
-    try:
-        script = html_parser.find('script').next_sibling.text
-    except AttributeError:
+    scripts = html_parser.head.find_all("script")
+    metadata_script = None
+    for script in scripts:
+        if "ad_id" in script.text:
+            metadata_script = script.text
+            break
+    if not metadata_script:
         return None, None, None
-    data_dict = json.loads(re.split("pageView|;", script)[3].replace('":{', "{").replace("}}'", "}"))
+    data_dict = json.loads(re.split("pageView|;", metadata_script)[3].replace('":{', "{").replace("}}'", "}"))
     return int(data_dict.get("ad_price", 0)) or None, data_dict.get("price_currency"), data_dict["ad_id"]
 
 
@@ -88,7 +92,7 @@ def get_poster_name(offer_markup):
 
     :except: Poster name not found
     """
-    poster_name_parser = BeautifulSoup(offer_markup, "html.parser").find(class_="offer-user__details")
+    poster_name_parser = BeautifulSoup(offer_markup, "html.parser").find(class_="offer-user__actions")
     try:
         if poster_name_parser.a is not None:
             found_name = poster_name_parser.a.text.strip()
@@ -181,10 +185,8 @@ def get_date_added(offer_markup):
     :rtype: int
     """
     html_parser = BeautifulSoup(offer_markup, "html.parser")
-    date = html_parser.find(class_="offer-titlebox__details").em.contents
-    date = date[4] if len(date) > 4 else date[0]
-    date = date.replace("Dodane", "").replace("\n", "").replace("  ", "").replace(", ", " ")[1:].strip()
-    # 10:09 04 września 2017
+    date = html_parser.find(class_="offer-bottombar__item").em.strong.text
+    date = date.replace("o ", "").replace("  ", "").replace(", ", " ").strip()
     date_parts = date.split(' ')
     hour, minute = map(int, date_parts[0].split(':'))
     month = get_month_num_for_string(date_parts[2])
@@ -282,9 +284,11 @@ def parse_offer(url):
         city, powiat, voivodeship, district = region
     elif len(region) == 3:
         city, voivodeship, district = region
-    else:
+    elif len(region) == 2:
         city, voivodeship = region
         district = None
+    else:
+        city, voivodeship, district = None, None, None
     data_dict = get_gpt_script(offer_content)
     result = {
         "title": get_title(offer_content),
